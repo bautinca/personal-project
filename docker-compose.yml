@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${TEST_DB_PASSWORD}
       POSTGRES_DB: ${TEST_DB_NAME}
     ports:
-      - "${TEST_DB_PORT}:5432"
+      - "5433:${TEST_DB_PORT}" # El puerto 5433 es el puerto expuesto en la laptop, mientras que el puerto interno del contenedor es 5432 (el puerto por defecto de PostgreSQL)
     volumes:
       - postgres_test_data:/var/lib/postgresql/data/
     healthcheck:
@@ -26,7 +26,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     ports:
-      - "${DB_PORT}:5432"
+      - "5432:${DB_PORT}" # El puerto 5432 es el puerto expuesto en la laptop, mientras que el puerto interno del contenedor es 5432 (el puerto por defecto de PostgreSQL)
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     healthcheck:

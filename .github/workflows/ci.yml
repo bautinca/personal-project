@@ -84,4 +84,15 @@ jobs:
         run: behave features/
 
     
-        
+# Hablando de las variables de entorno aca no importa ni Docker compose ni el archivo .env ni nada
+# Todas las variables de entorno que definimos aca son visibles para todos los steps y para todos los servicios
+# GitHub Actions levanta el contenedor Postgres directamente en la maquina (solo localhost:5432). No hay puertos externos ni internos, todo es 5432
+# Es por ello que en el ci.yml definimos DB_HOST y TEST_DB_HOST como localhost y DB_PORT y TEST_DB_PORT como 5432. No hay que confundir esto con el docker-compose.yml donde si hay puertos internos y externos.
+
+# Las reglas que se tienen que cumplir siempre en este pipeline CI son:
+
+#   - POSTGRES_DB == TEST_DB_NAME == DB_NAME
+#   - POSTGRES_USER == TEST_DB_USER == DB_USER
+#   - POSTGRES_PASSWORD == TEST_DB_PASSWORD == DB_PASSWORD
+#   - TEST_DB_HOST == DB_HOST == localhost
+#   - TEST_DB_PORT == DB_PORT == 5432

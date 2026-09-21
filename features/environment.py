@@ -4,11 +4,12 @@ import os
 # Configuramos Django para que utilice el archivo de configuración de settings del proyecto. Esto es necesario para que behave pueda interactuar con la base de datos y otros componentes de Django durante las pruebas.
 os.environ["DJANGO_SETTINGS_MODULE"] = "personal_project.settings"
 # Ademas definimos variables de entorno para la base de datos de testing, que se utilizará durante la ejecución de las pruebas. Esto permite que las pruebas se ejecuten en un entorno aislado sin afectar la base de datos de desarrollo
+# Logicamente las variables de entorno de la DB de testing deben estar definidas en el archivo .env, y deben ser cargadas antes de ejecutar las pruebas. Esto asegura que las pruebas se ejecuten con la configuración correcta y que los datos de prueba se almacenen en la base de datos de testing.
 os.environ["DB_NAME"] = os.environ.get("TEST_DB_NAME")
 os.environ["DB_USER"] = os.environ.get("TEST_DB_USER")
 os.environ["DB_PASSWORD"] = os.environ.get("TEST_DB_PASSWORD")
 os.environ["DB_HOST"] = os.environ.get("TEST_DB_HOST")
-os.environ["DB_PORT"] = "5432" # Usamos puerto interno del contenedor, siempre fijo
+os.environ["DB_PORT"] = os.environ.get("TEST_DB_PORT")
 
 import django
 
