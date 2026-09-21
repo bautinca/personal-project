@@ -1,0 +1,87 @@
+name: Pipeline CI
+
+# Diremos que este pipeline CI (workflow) se ejecutara en cada push a la rama main y en cada PR (pull request) hacia la rama main
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Definimos los jobs que se ejecutaran en este workflow. Los jobs son un conjunto de pasos que se ejecutan en un runner (maquina virtual) de GitHub Actions.
+# Cada job se ejecuta en paralelo a menos que se indique lo contrario.
+jobs:
+  ci:
+    # GitHub Actions levanta una maquina virtual (runner) con Ubuntu limpio para cada ejecucion. No usa nuestra notebook ni nuestros contenedores locales. Es un entorno
+    # completamente limpio y aislado
+    runs-on: ubuntu-latest
+
+    # Como no tenemos Docker Compose aca, en GitHub Actions tiene su propio mecanismo para levantar servicios tambien en contenedores.
+    # Levantamos un unico contenedor de Postgres directamente en la misma maquina virtual accesible en localhost:5432.
+    # Ya con un contenedor de base de datos es suficiente ya que la usamos de testeo solo
+    services:
+      db_test:
+        image: postgres:16
+        # Definimos las variables de entorno que se pasaran al contenedor de base de datos de test.
+        # Estas variables de entorno equivalen al bloque environment que tenemos en el docker-compose.yml. Aca las credenciales son de testing y no importa que esten visibles
+        env:
+          POSTGRES_USER: max
+          POSTGRES_PASSWORD: max123
+          POSTGRES_DB: personal_project
+        ports:
+          - 5432:5432
+        # Definimos una serie de opciones para el contenedor de base de datos de test.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    
+    # Definimos las variables de entorno pero a nivel de job (las anteriores eran a nivel de servicio).
+    # Estas variables de entorno equivalen al archivo .env y no tienen que ser necesariamente las mismas 
+    env:
+      DB_NAME: personal_project
+      DB_USER: max
+      DB_PASSWORD: max123
+      DB_HOST: localhost
+      DB_PORT: 5432
+      TEST_DB_NAME: test_db
+      TEST_DB_USER: test_user
+      TEST_DB_PASSWORD: test_password
+      TEST_DB_HOST: localhost
+      TEST_DB_PORT: 5433
+      DJANGO_SETTINGS_MODULE: personal_project.settings
+    
+    # Definimos los steps que se ejecutaran en este job. Cada step es un comando que se ejecuta en la maquina virtual.
+    steps:
+      # 1° Step: Descargamos el codigo del repositorio en la maquina virtual
+      - name: Checkout del codigo
+        uses: actions/checkout@v3
+
+      # 2° Step: Instalamos Python, la misma version que usamos en el contenedor de desarrollo.
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      
+      # 3° Step: Instalamos todas las dependencias necesarias del proyecto que estan en el requirements.txt.
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+      
+      # 4° Step: Corremos el linter Ruff
+      - name: Correr linter Ruff
+        run: ruff check .
+
+      # 5° Step: Corremos los tests unitarios
+      - name: Correr tests unitarios
+        run: pytest base/tests/unit/ -v
+
+      # 6° Step: Corremos las migraciones
+      - name: Correr migraciones
+        run: python manage.py migrate
+
+      # 7° Step: Corremos los tests de aceptacion
+      - name: Correr tests de aceptacion
+        run: behave features/
+
+    
+        

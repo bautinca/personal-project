@@ -20,3 +20,6 @@
 
 ### *Test de aceptacion*
 - Gherkins con Behave (Python)
+
+### *Pipeline CI*
+- GitHub Actions

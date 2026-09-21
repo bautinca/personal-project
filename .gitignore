@@ -1,3 +1,4 @@
+# Nunca subir al repositorio remoto las variables de entorno .env (lo mas importante)
 .env
 db.sqlite3
 __pycache__/
