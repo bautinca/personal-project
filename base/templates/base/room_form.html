@@ -1,0 +1,38 @@
+<!--- TEMPLATE FORMULARIO CREAR/EDITAR ROOM --->
+
+{% extends "main.html" %}
+
+{% block content %}
+
+<div>
+  <form method="POST">
+    {% csrf_token %}
+
+    <div>
+      <label for="name">Nombre de la sala</label>
+      <input type="text" name="name" id="name"
+             value="{% if room %}{{ room.name }}{% endif %}" required>
+    </div>
+
+    <div>
+      <label for="topic">Topic</label>
+      <select name="topic" id="topic">
+        {% for topic in topics %}
+          <option value="{{ topic }}"
+            {% if room and room.topic == topic %}selected{% endif %}>
+            {{ topic }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label for="description">Descripcion</label>
+      <textarea name="description" id="description">{% if room %}{{ room.description }}{% endif %}</textarea>
+    </div>
+
+    <input type="submit" value="Submit">
+  </form>
+</div>
+
+{% endblock content %}

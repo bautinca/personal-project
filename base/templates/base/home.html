@@ -1,0 +1,28 @@
+<!--- TEMPLATE ENDPOINT / DE LA APLICACION BASE --->
+
+{% extends "main.html" %}
+
+{% block content %}
+<div>
+  <a href="/create-room/">Create Room</a>
+  <hr>
+</div>
+
+<div>
+  <div>
+    {% for room in rooms %}
+      <div>
+        <h5>{{room.id}} -- <a href="/room/{{room.id}}">{{room.name}}</a> Host: {{room.host_username}} -- Topic: {{room.topic}}</h5>
+        {% if request.user.username == room.host_username %}
+        <ul>
+          <li><a href="/update-room/{{room.id}}">Edit</a></li>
+          <li><a href="/delete-room/{{room.id}}">Delete</a></li>
+        </ul>
+        {% endif %}
+        <hr>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock content %}
+

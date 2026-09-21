@@ -1,0 +1,39 @@
+<!--- TEMPLATE ENDPOINT /ROOM DE LA APLICACION BASE --->
+
+
+{% extends "main.html" %}
+
+{% block content %}
+
+<div> 
+  <h1>{{ room.name }}</h1>
+  <p>{{ room.topic }} - {{ room.description }}</p>
+</div>
+
+<div> 
+  <h3>Mensajes</h3>
+
+  {% if request.user.is_authenticated %}
+  <form method="POST">
+    {% csrf_token %}
+    <textarea name="body" placeholder="Escribi tu mensaje..."></textarea>
+    <input type="submit" value="Enviar">
+  </form>
+  {% else %}
+  <p><a href="/login">Inicia sesion</a> para enviar mensajes.</p>
+  {% endif %}
+
+  <hr>
+
+  {% for message in room_messages %}
+    <div>
+      <strong>{{ message.user_username }}</strong>
+      <p>{{ message.body }}</p>
+    </div>
+    <hr>
+  {% empty %}
+    <p>No hay mensajes aun. Se el primero!</p>
+  {% endfor %}
+</div>
+
+{% endblock content %}

@@ -1,0 +1,14 @@
+<!--- TEMPLATE ENCABEZADO DEL PROYECTO GENERAL --->
+
+<a href="/">
+  <h1>Mi Aplicacion</h1>
+</a>
+
+{% if user.is_authenticated %}
+  <p>Hello {{user.username}}</p>
+  <a href="/logout/">Logout</a>
+{% else %}
+  <a href="/login/">Login</a>
+{% endif %}
+
+<hr>
