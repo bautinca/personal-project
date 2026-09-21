@@ -1,6 +1,7 @@
+from base import models
 from base.domain.entities.message import Message
 from base.domain.repositories.message_repository import MessageRepository
-from base import models
+
 
 class DjangoMessageRepository(MessageRepository):
 

@@ -1,7 +1,9 @@
-from behave import given, when, then
-from django.test import Client
+from behave import given, then, when
+
 # Usamos la libreria BeautifulSoup para parsear el HTML y obtener el ID de la sala a editar
 from bs4 import BeautifulSoup
+from django.test import Client
+
 
 @given('que el usuario completa el formulario de registro con username "{username}" y password "{password}"')
 def step_register_user(context, username, password):

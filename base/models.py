@@ -9,6 +9,7 @@ INFRAESTRUCTURA ORM PURA, LE DICE A DJANGO COMO MAPEAR DE OBJETOS A LAS TABLAS
 from django.contrib.auth.models import User
 from django.db import models
 
+
 # Tabla Rooms
 class Room(models.Model):
     host = models.ForeignKey(

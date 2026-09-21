@@ -6,9 +6,10 @@ ENTONCES TOCARIAMOS ESTE ARCHIVO
 ES LOGICO QUE COMO ESTA EN CONTACTO CON LA BASE DE DATOS POSTGRESQL ESTA POR FUERA DEL HEXAGONO EL ADAPTADOR
 """
 
+from base import models
 from base.domain.entities.room import Room
 from base.domain.repositories.room_repository import RoomRepository
-from base import models
+
 
 class DjangoRoomRepository(RoomRepository):
 

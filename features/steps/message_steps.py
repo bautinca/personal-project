@@ -1,6 +1,6 @@
-from behave import given, when, then
-from django.test import Client
+from behave import then, when
 from bs4 import BeautifulSoup
+
 
 @when('el usuario entra a la sala "{name}" y envia el mensaje "{body}"')
 def step_enter_room_and_send_message(context, name, body):

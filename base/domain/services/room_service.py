@@ -5,8 +5,9 @@ RECIBE COMO INSTANCIA EL REPOSITORIO DE SALAS PARA LA PERSISTENCIA DE LAS SALAS 
 ES PARA PERSISTIR, SOLO SABE QUE HAY UN REPOSITORIO DE SALAS QUE TIENE CONTACTO CON LA DB
 """
 
-from base.domain.entities.room import Room, VALID_TOPICS
+from base.domain.entities.room import VALID_TOPICS, Room
 from base.domain.repositories.room_repository import RoomRepository
+
 
 class UnauthorizedError(Exception):
   pass

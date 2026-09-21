@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 from base.domain.entities.message import Message
 from base.domain.services.message_service import MessageService
 
+
 # Test crear mensaje con contenido valido
 def test_send_message():
   mock_repository = MagicMock() # El mock simula un repositorio sin necesidad de usar una base de datos real, todo en memoria

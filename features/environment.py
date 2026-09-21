@@ -11,10 +11,12 @@ os.environ["DB_HOST"] = os.environ.get("TEST_DB_HOST")
 os.environ["DB_PORT"] = "5432" # Usamos puerto interno del contenedor, siempre fijo
 
 import django
+
 # Inicializamos Django para que pueda cargar la configuración del proyecto y preparar el entorno de pruebas. Esto es necesario para que behave pueda interactuar con los modelos, vistas y otros componentes de Django durante las pruebas.
 django.setup()
 
 from django.test.utils import setup_test_environment
+
 setup_test_environment()  # Configuramos el entorno de pruebas de Django para que las pruebas se ejecuten en un entorno controlado y aislado. Esto incluye la configuración de la base de datos de pruebas, la limpieza de datos entre pruebas y otras configuraciones necesarias para garantizar la consistencia y confiabilidad de las pruebas.
 
 # Definimos un hook de behave que se ejecuta antes de todas las pruebas. Este hook se utiliza para realizar configuraciones adicionales necesarias para el entorno de pruebas, como la creación de la base de datos de pruebas y la aplicación de migraciones.
@@ -25,7 +27,7 @@ def before_all(context):
     # Antes de todo intentamos verificar si la base de datos de pruebas ya está creada y accesible. Si no lo está, se lanzará una excepción y procederemos a crearla.
     with connection.cursor() as cursor:
       cursor.execute("SELECT 1 FROM django_migrations LIMIT 1;")  # Intentamos ejecutar una consulta simple para verificar si la base de datos de pruebas está disponible y accesible. Si la consulta falla, significa que la base de datos no está lista y debemos crearla.
-  except Exception:
+  except Exception: # noqa: BLE001
     # Si la base de datos de pruebas no está creada, la creamos utilizando el comando de gestión de Django. Esto asegura que la base de datos esté disponible para las pruebas.
     call_command("migrate", verbosity=0)  # Aplicamos las migraciones de la base de datos antes de ejecutar todas las pruebas para garantizar que la estructura de la base de datos esté actualizada y consistente con el estado esperado por las pruebas. Esto incluye la creación de tablas, la aplicación de cambios en los esquemas y otras configuraciones necesarias para garantizar que la base de datos esté lista para ser utilizada durante la ejecución de las pruebas.
 

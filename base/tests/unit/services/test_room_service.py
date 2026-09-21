@@ -5,7 +5,12 @@ TESTS UNITARIOS ROOM SERVICE
 from unittest.mock import MagicMock
 
 from base.domain.entities.room import Room
-from base.domain.services.room_service import RoomService, InvalidTopicError, UnauthorizedError
+from base.domain.services.room_service import (
+  InvalidTopicError,
+  RoomService,
+  UnauthorizedError,
+)
+
 
 # Test crear sala con topic valido
 def test_create_room_with_valid_topic():

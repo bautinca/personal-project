@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+
 from base.domain.entities.message import Message
+
 
 class MessageRepository(ABC):
 

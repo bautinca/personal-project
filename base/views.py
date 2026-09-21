@@ -6,7 +6,7 @@ HTTP. NO TIENE LOGICA DE NEGOCIO POR TANTO ES OBVIO QUE VA POR FUERA DEL HEXAGON
 """
 
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, models
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import (
@@ -15,13 +15,17 @@ from django.contrib.auth.models import (
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 
-from base.domain.services.message_service import MessageService
 from base.adapters.django_message_repository import DjangoMessageRepository
-from base.domain.services.room_service import RoomNotFoundError, RoomService, UnauthorizedError, InvalidTopicError
 from base.adapters.django_room_repository import DjangoRoomRepository
-from base.models import Message
-from base.forms import RoomForm
 from base.domain.entities.room import VALID_TOPICS
+from base.domain.services.message_service import MessageService
+from base.domain.services.room_service import (
+    InvalidTopicError,
+    RoomService,
+    UnauthorizedError,
+)
+from base.forms import RoomForm
+from base.models import Room
 
 
 # Funciones helper
@@ -91,7 +95,7 @@ def room(request, pk):
 
     try:
         room_entity = service.get_room(pk)
-    except Exception:
+    except models.Room.DoesNotExist:
         return HttpResponse("Sala no encontrada", status=404)
 
     room_messages = message_service.get_room_messages(pk)
@@ -139,7 +143,7 @@ def updateRoom(request, pk):
 
     try:
         room_entity = service.get_room(pk)
-    except Exception:
+    except Room.DoesNotExist:
         return HttpResponse("Sala no encontrada", status=404)
 
     if request.user.id != room_entity.host_id:
@@ -171,7 +175,7 @@ def deleteRoom(request, pk):
         service.delete_room(room_id=pk, requesting_user_id=request.user.id)
     except UnauthorizedError:
         return HttpResponse("No autorizado", status=403)
-    except Exception:
+    except Room.DoesNotExist:
         return HttpResponse("Sala no encontrada", status=404)
 
     return redirect("home")

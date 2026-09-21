@@ -6,7 +6,9 @@ SIEMPRE ES CLASE ABSTRACTA PURA, NO IMPORTA SI ES DJANGO O POSTGRES, NADA
 """
 
 from abc import ABC, abstractmethod
+
 from base.domain.entities.room import Room
+
 
 class RoomRepository(ABC):
 

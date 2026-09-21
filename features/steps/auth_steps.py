@@ -1,11 +1,12 @@
-from behave import given, when, then
-from django.test import Client
+from behave import given, then, when
 from bs4 import BeautifulSoup
+from django.test import Client
+
 
 @given('que existe un usuario registrado con username "{username}" y password "{password}"')
 def step_existing_user(context, username, password):
   context.client = Client()
-  response = context.client.post("/register/", {
+  context.client.post("/register/", {
       "username": username,
       "password1": password,
       "password2": password,
