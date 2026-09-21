@@ -26,3 +26,16 @@ class DjangoMessageRepository(MessageRepository):
       )
       for m in models.Message.objects.filter(room_id=room_id)
     ]
+
+  def find_by_id(self, message_id: int) -> Message:
+    orm_message = models.Message.objects.get(id=message_id)
+    return Message(
+      id=orm_message.id,
+      room_id=orm_message.room_id,
+      user_id=orm_message.user_id,
+      user_username=orm_message.user.username,
+      body=orm_message.body,
+    )
+
+  def delete(self, message_id: int) -> None:
+    models.Message.objects.filter(id=message_id).delete()

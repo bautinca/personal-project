@@ -14,3 +14,11 @@ class MessageRepository(ABC):
   @abstractmethod
   def find_by_room(self, room_id: int) -> list[Message]:
     pass
+
+  @abstractmethod
+  def find_by_id(self, message_id: int) -> Message:
+    pass
+
+  @abstractmethod
+  def delete(self, message_id: int) -> None:
+    pass

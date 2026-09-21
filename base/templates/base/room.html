@@ -29,6 +29,12 @@
     <div>
       <strong>{{ message.user_username }}</strong>
       <p>{{ message.body }}</p>
+      {% if request.user.is_authenticated and request.user.id == message.user_id %}
+        <form method="POST" action="{% url 'delete-message' room_id=room.id message_id=message.id %}">
+          {% csrf_token %}
+          <button type="submit">Eliminar</button>
+        </form>
+      {% endif %}
     </div>
     <hr>
   {% empty %}

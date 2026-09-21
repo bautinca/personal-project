@@ -17,3 +17,17 @@ Feature: Mensajes en salas
       Given que el usuario no esta autenticado
       When el usuario no registrado entra a la sala "Sala Python"
       Then no ve el formulario para enviar mensajes
+
+  Rule: Solo el autor puede eliminar sus mensajes
+    Scenario: El autor elimina su propio mensaje
+      When el usuario entra a la sala "Sala Python" y envia el mensaje "Mensaje a eliminar"
+      Then el mensaje "Mensaje a eliminar" aparece en la sala "Sala Python"
+      And ve el boton "Eliminar" para el mensaje "Mensaje a eliminar"
+      When elimina el mensaje "Mensaje a eliminar"
+      Then el mensaje "Mensaje a eliminar" ya no aparece en la sala "Sala Python"
+
+    Scenario: Otro usuario no puede eliminar un mensaje ajeno
+      Given que existe un mensaje "Mensaje de otro usuario" creado por "bauti"
+      And que el usuario "juan" se registra e inicia sesion con password "auto123123"
+      When el usuario "juan" entra a la sala "Sala Python"
+      Then no ve el boton "Eliminar" para el mensaje "Mensaje de otro usuario"

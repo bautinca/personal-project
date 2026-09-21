@@ -15,6 +15,7 @@ from django.contrib.auth.models import (
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 
+from base import models as base_models
 from base.adapters.django_message_repository import DjangoMessageRepository
 from base.adapters.django_room_repository import DjangoRoomRepository
 from base.domain.entities.room import VALID_TOPICS
@@ -115,6 +116,25 @@ def room(request, pk):
         "room": room_entity,
         "room_messages": room_messages,
     })
+
+# Logica eliminar mensaje
+@login_required(login_url="login")
+def deleteMessage(request, room_id, message_id):
+    if request.method != "POST":
+        return HttpResponse("Metodo no permitido", status=405)
+
+    service = _get_message_service()
+    try:
+        service.delete_message(
+            message_id=message_id,
+            requesting_user_id=request.user.id,
+        )
+    except UnauthorizedError:
+        return HttpResponse("No autorizado", status=403)
+    except base_models.Message.DoesNotExist:
+        return HttpResponse("Mensaje no encontrado", status=404)
+
+    return redirect("room", pk=room_id)
 
 # Logica crear sala
 @login_required(login_url="login")

@@ -11,6 +11,11 @@ urlpatterns = [
     path(
         "room/<str:pk>", views.room, name="room"
     ),  # Endpoint /room de la aplicacion base
+    path(
+        "room/<str:room_id>/message/<str:message_id>/delete/",
+        views.deleteMessage,
+        name="delete-message",
+    ),
     path("create-room/", views.createRoom, name="create-room"),  # Endpoint /create-room de la aplicacion base
     path("update-room/<str:pk>", views.updateRoom, name="update-room"),  # Endpoint /update-room de la aplicacion base
     path("delete-room/<str:pk>", views.deleteRoom, name="delete-room"),  # Endpoint /delete-room de la aplicacion base
