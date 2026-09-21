@@ -44,11 +44,11 @@ jobs:
       DB_PASSWORD: max123
       DB_HOST: localhost
       DB_PORT: 5432
-      TEST_DB_NAME: test_db
-      TEST_DB_USER: test_user
-      TEST_DB_PASSWORD: test_password
+      TEST_DB_NAME: personal_project
+      TEST_DB_USER: max
+      TEST_DB_PASSWORD: max123
       TEST_DB_HOST: localhost
-      TEST_DB_PORT: 5433
+      TEST_DB_PORT: 5432
       DJANGO_SETTINGS_MODULE: personal_project.settings
     
     # Definimos los steps que se ejecutaran en este job. Cada step es un comando que se ejecuta en la maquina virtual.
