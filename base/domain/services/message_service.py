@@ -1,6 +1,7 @@
 from base.domain.entities.message import Message
 from base.domain.repositories.message_repository import MessageRepository
 
+
 class UnauthorizedError(Exception):
   pass
 
