@@ -23,3 +23,6 @@
 
 ### *Pipeline CI*
 - GitHub Actions
+
+## *Despliegue*
+- AWS
