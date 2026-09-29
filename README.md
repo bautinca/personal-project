@@ -25,4 +25,4 @@
 - GitHub Actions
 
 ## *Despliegue*
-- AWS
+- Servicios AWS
