@@ -21,16 +21,12 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-zcz)q-)*j39v!%!)!uo$rxyawf&rfin_mu7)8#)9fi*x^u@oy&"
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+# En ambiente productivo definimos las variables de entorno
+# SECRET_KEY, DEBUG y ALLOWED_HOSTS. Definimos estas variables porque
+# en el archivo .env se encuentran las variables de entorno para el proyecto.
+SECRET_KEY = os.getenv("SECRET_KEY")
+DEBUG = os.getenv("DEBUG", "False") == "True"
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 
 # Application definition
