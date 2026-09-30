@@ -27,6 +27,6 @@
 ### *Despliegue*
 - Servicios AWS
 
-A continuacion mostramos la arq. de nuestra aplicacion montada en los servicios de la nube AWS para el despliegue
+A continuacion mostramos la arq. de nuestra aplicacion montada en los servicios de la nube AWS para el despliegue.
 
 ![](./readme_images/arq-aws-proyecto-personal.jpg)
