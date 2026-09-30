@@ -38,6 +38,9 @@ def _get_message_service() -> MessageService:
 
 # ---------------------------------------
 
+def health_check(request):
+    return HttpResponse("ok")
+
 # Logica de logueo
 def loginPage(request):
     if request.user.is_authenticated:

@@ -10,3 +10,4 @@ behave-django
 beautifulsoup4
 ruff
 gunicorn
+whitenoise
