@@ -95,8 +95,6 @@ jobs:
     name: Deploy to ECS
     needs: test
     runs-on: ubuntu-latest
-    environment:
-      name: production
     steps:
       # En este step hacemos checkout del codigo del repositorio en la maquina virtual. Esto es necesario para poder construir la imagen
       # de dockerfile y subirla al repositorio de ECR. El checkout se hace en un step aparte para que el codigo del repositorio este disponible para
@@ -109,7 +107,7 @@ jobs:
       - name: Configure AWS credentials with OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to ECR
