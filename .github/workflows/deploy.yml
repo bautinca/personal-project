@@ -1,0 +1,164 @@
+name: CI/CD Deploy
+
+# El pipeline de CI/CD se ejecutara en dos casos: cuando se haga push a la rama deploy o cuando se ejecute
+# manualmente desde la pestaña de Actions en GitHub (workflow_dispatch)
+on:
+  push:
+    branches: [deploy]
+  workflow_dispatch:
+
+# Definimos los permisos que tendra el workflow. En este caso, necesitamos permisos de lectura para el contenido
+# del repositorio y permisos de escritura para el id-token, que es necesario para autenticarnos con AWS usando OIDC (OpenID Connect).
+permissions:
+  contents: read
+  id-token: write
+
+# El concurrency nos permite controlar la concurrencia de los jobs. En este caso, estamos diciendo que solo puede haber
+# un job de deploy en ejecucion al mismo tiempo. Si se ejecuta otro job de deploy mientras hay uno en ejecucion, el nuevo job se pondra en cola y esperara a que el job
+# en ejecucion termine. Esto es util para evitar que se desplieguen varias versiones de la aplicacion al mismo tiempo y se generan conflictos.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+# Definimos variables de entorno que se usaran en todo el workflow. Estas variables de entorno son necesarias para desplegar
+# la aplicacion en AWS ECS
+env:
+  AWS_REGION: us-east-2 # Region donde se encuentra nuestro cluster de ECS
+  ECR_REPOSITORY: personal-project # Nombre del repositorio de ECR donde se subira la imagen de Dockerfile de nuestro proyecto
+  ECS_CLUSTER: personal-project-cluster # Nombre del cluster de ECS donde se desplegara la aplicacion
+  ECS_SERVICE: personal-project-service # Nombre del servicio de ECS donde se desplegara la aplicacion
+  ECS_TASK_DEFINITION: personal-project-task # Nombre de la definicion de tarea de ECS que se usara para desplegar la aplicacion
+  CONTAINER_NAME: web # Nombre del contenedor dentro de la definicion de tarea de ECS que se usara para desplegar la aplicacion
+
+# Definimos los jobs que se ejecutaran en este workflow. En este caso, tenemos dos jobs: test y deploy.
+# El jobs de test se ejecutara primero y el job de deploy se ejecutara solo si el job de test termina correctamente. Esto es util para asegurarnos de que
+# la aplicacion pasa todas las pruebas antes de desplegarla en produccion.
+jobs:
+  # Si notamos este job hace exactamente lo mismo que el job de test del workflow de CI, pero con la diferencia que este
+  # job se ejecuta en la rama deploy y no en la rama main.
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      db_test:
+        image: postgres:16
+        env:
+          POSTGRES_USER: max
+          POSTGRES_PASSWORD: max123
+          POSTGRES_DB: personal_project
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_NAME: personal_project
+      DB_USER: max
+      DB_PASSWORD: max123
+      DB_HOST: localhost
+      DB_PORT: 5432
+      TEST_DB_NAME: personal_project
+      TEST_DB_USER: max
+      TEST_DB_PASSWORD: max123
+      TEST_DB_HOST: localhost
+      TEST_DB_PORT: 5432
+      DJANGO_SETTINGS_MODULE: personal_project.settings
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Unit tests
+        run: pytest base/tests/unit/ -v
+
+      - name: Migrate test database
+        run: python manage.py migrate
+
+      - name: Acceptance tests
+        run: behave features/
+
+  # Ahora la segunda fase, el job de deploy (la parte nueva del workflow). Este job se ejecutara solo si el job de test
+  # termina correctamente. Esto es util para asegurarnos de que la aplicacion pasa todas las pruebas antes de desplegarla en produccion.
+  deploy:
+    name: Deploy to ECS
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      # En este step hacemos checkout del codigo del repositorio en la maquina virtual. Esto es necesario para poder construir la imagen
+      # de dockerfile y subirla al repositorio de ECR. El checkout se hace en un step aparte para que el codigo del repositorio este disponible para
+      # todos los steps siguientes.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # En este step configuramos las credenciales de AWS usando OIDC (OpenID Connect). Esto nos permite autenticarnos con AWS sin
+      # necesidad de usar credenciales de AWS.
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -f dockerfile -t "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
+          docker push "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "image=$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "$ECS_TASK_DEFINITION" \
+            --query taskDefinition > task-definition.json
+
+      - name: Update task definition image
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        run: |
+          jq --arg image "$IMAGE" --arg name "$CONTAINER_NAME" \
+            '.containerDefinitions |= map(if .name == $name then .image = $image else . end) |
+             del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+            task-definition.json > task-definition-rendered.json
+
+      - name: Register task definition
+        id: task-definition
+        run: |
+          ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://task-definition-rendered.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          echo "arn=$ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --task-definition "${{ steps.task-definition.outputs.arn }}" \
+            --force-new-deployment
+
+      - name: Wait for ECS service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE"
