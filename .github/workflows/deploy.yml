@@ -93,51 +93,61 @@ jobs:
   # termina correctamente. Esto es util para asegurarnos de que la aplicacion pasa todas las pruebas antes de desplegarla en produccion.
   deploy:
     name: Deploy to ECS
-    needs: test
+    needs: test # El job 'deploy' arranca si el job 'test' termina correctamente, si falla algo del linter ruff, test unitarios o test de aceptacion con behave entonces no llega a la parte de AWS
     runs-on: ubuntu-latest
     steps:
-      # En este step hacemos checkout del codigo del repositorio en la maquina virtual. Esto es necesario para poder construir la imagen
-      # de dockerfile y subirla al repositorio de ECR. El checkout se hace en un step aparte para que el codigo del repositorio este disponible para
-      # todos los steps siguientes.
+      # Aca se descarga todo el contenido de la rama deploy del repositorio para poder construir la imagen de Dockerfile y subirla a ECR (Elastic Container Registry) de AWS.
       - name: Checkout
         uses: actions/checkout@v4
 
-      # En este step configuramos las credenciales de AWS usando OIDC (OpenID Connect). Esto nos permite autenticarnos con AWS sin
-      # necesidad de usar credenciales de AWS.
+      # Ahora entramos de lleno a la parte de AWS. Primero configuramos las credenciales de AWS usando OIDC (OpenID Connect) para autenticarnos con AWS sin necesidad de usar claves de acceso. Esto es mas seguro y recomendado por AWS
+      # Github solicita un token OIDC y AWS verifica la rama deploy, el repositorio, el proveedor OIDC y politica de confianza del rol IAM
       - name: Configure AWS credentials with OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }} # Si todo esta bien entonces Github asume el rol GitHubActionsDeployPersonalProject (rol creado en AWS) y obtiene credenciales temporales para poder interactuar con los servicios de AWS
+          aws-region: ${{ env.AWS_REGION }} # Definimos la region de AWS donde se encuentra nuestro cluster de ECS
+      
+      # Ahora que tenemos las credenciales temporales de AWS, podemos loguearnos en ECR (Elastic Container Registry) para poder subir la imagen de Dockerfile de nuestro proyecto. Esto es necesario porque ECR es un servicio de AWS que nos permite almacenar y gestionar imágenes de contenedores Docker.
       - name: Log in to ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
-
+      
+      # Ahora que estamos logueados en ECR podemos construir la imagen de Dockerfile de nuestro proyecto y subirla a ECR. 
       - name: Build and push image
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
+        # Construimos la imagen de Dockerfile y la subimos a ECR. El nombre de la imagen sera el nombre del repositorio de ECR y el tag sera el SHA del commit actual. Esto nos permite tener un control de versiones de las imagenes de Dockerfile que subimos a ECR.
+        # Por ejemplo la imagen construida y subida a ECR sera algo como $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         run: |
           docker build -f dockerfile -t "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
           docker push "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           echo "image=$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
-
+      
+      # Ya tenemos la imagen cargada en ECR, ahora necesitamos actualizar la definicion de tarea de ECS para que use la nueva imagen que acabamos de subir a ECR
+      # Para eso necesitamos descargar la definicion de tarea actual de ECS, actualizar la imagen del contenedor y registrar la nueva definicion de tarea en ECS
+      # Esto conserva la configuracion existente en la defincion de tarea, como variables de secrets manager, rol de ejecucion
+      # puerto 8000, cpu y memoria, config. del contenedor, etc. lo unico que cambiamos en la definicion de tarea es la imagen del contenedor que ahora apunta a la nueva imagen que acabamos de subir a ECR
       - name: Download current task definition
         run: |
           aws ecs describe-task-definition \
             --task-definition "$ECS_TASK_DEFINITION" \
             --query taskDefinition > task-definition.json
-
+      
+      # Es lo mismo que dijimos antes pero ahora concretamente estamos usando jq para actualizar la imagen del contenedor en la definicion de tarea.
       - name: Update task definition image
         env:
           IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        # Buscamos el contenedor con el nombre definido en la variable de entorno CONTAINER_NAME y actualizamos su imagen con la nueva imagen que acabamos de subir a ECR. Luego eliminamos algunos campos que no son necesarios para registrar la nueva definicion de tarea en ECS. 
         run: |
           jq --arg image "$IMAGE" --arg name "$CONTAINER_NAME" \
             '.containerDefinitions |= map(if .name == $name then .image = $image else . end) |
              del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
             task-definition.json > task-definition-rendered.json
-
+      
+      # Ahora ya actualizada la definicion de tarea con la nueva imagen ahora necesitamos registrar una nueva revision de la definicion de tarea en ECS
+      # Osea simplemente creamos otra revision, si la revision anterior era personal-project-task:4 (con la imagen anterior) ahora esta seria personal-project-task:5 (con la nueva imagen)
       - name: Register task definition
         id: task-definition
         run: |
@@ -146,7 +156,11 @@ jobs:
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           echo "arn=$ARN" >> "$GITHUB_OUTPUT"
-
+      
+      # Listo, ya la revision creada de la definicion de tarea ahora tenemos que actualizar
+      # el servicio de ECS para que use la nueva revision de la definicion de tarea.
+      # Entonces ECS inicia nuevas tareas con la imagen nueva y retira gradualmente las anteriores
+      # Aca es donde justamente se da el despliegue de la nueva version de la aplicacion en el cluster de ECS.
       - name: Update ECS service
         run: |
           aws ecs update-service \
@@ -154,7 +168,9 @@ jobs:
             --service "$ECS_SERVICE" \
             --task-definition "${{ steps.task-definition.outputs.arn }}" \
             --force-new-deployment
-
+      
+      # Por ultimo nos quedamos esperando hasta que ECS confirme que el servicio esta estable, osea
+      # que las tareas nuevas esten en estado de 'Running', que la ALB este 'healthy', no haya tareas fallando y el servicio alcance la unidad deseada
       - name: Wait for ECS service stability
         run: |
           aws ecs wait services-stable \
