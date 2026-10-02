@@ -176,3 +176,8 @@ jobs:
           aws ecs wait services-stable \
             --cluster "$ECS_CLUSTER" \
             --services "$ECS_SERVICE"
+
+      # NOTA: El workflow de CI/CD actual lo que hace es subir una nueva imagen nueva al repositorio ECR, luego modifica la definicion de tarea de ECS para que use la nueva imagen, crea una nueva revision de definicion de tarea
+      # y finalmente actualiza el servicio de ECS. Sin embargo no crea el repositorio ECR, ni subredes, ni la bdd RDS, ni el balanceador ALB, ni cluster, ni grupos de seguridad
+      # Esto quiere decir que si por ejemplo en la nube de AWS eliminamos el recurso VPC o subredes o ALB, etc. entonces el workflow de CI/CD no va a poder desplegar la aplicacion porque no existen los recursos necesarios para que ECS funcione
+      # Por eso es importante que antes de ejecutar el workflow de CI/CD, primero hayamos creado todos los recursos necesarios en AWS.
