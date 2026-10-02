@@ -102,6 +102,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Diagnose GitHub OIDC claims
+        uses: github/actions-oidc-debugger@main
+        with:
+          audience: sts.amazonaws.com
+        continue-on-error: true
+
       # En este step configuramos las credenciales de AWS usando OIDC (OpenID Connect). Esto nos permite autenticarnos con AWS sin
       # necesidad de usar credenciales de AWS.
       - name: Configure AWS credentials with OIDC
